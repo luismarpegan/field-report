@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Field Report">
+<meta name="theme-color" content="#eef1ec">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;-webkit-text-size-adjust:100%}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Field Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one phone-width column; sticky app bar on top, sticky action bar at the bottom; the report renders as a white sheet of paper. */
+:root {
+  --bg: #eef1ec; --surface: #ffffff; --ink: #18201b; --muted: #5d6a61; --line: #d5dcd3;
+  --accent: #2e8b3e; --accent-ink: #ffffff; --accent-soft: #dcefdc; --warn: #a86b00; --warn-soft: #f8ebcf;
+  --paper: #ffffff; --paper-ink: #111111; --paper-bar: #5fc94f; --paper-line: #79d36a;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Barlow", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121714; --surface: #1b221e; --ink: #e8eee9; --muted: #9aa89e; --line: #2d3731;
+  --accent: #4cbb5c; --accent-ink: #08130b; --accent-soft: #1f3a24; --warn: #e3ac45; --warn-soft: #3a2e14; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121714; --surface: #1b221e; --ink: #e8eee9; --muted: #9aa89e; --line: #2d3731;
+  --accent: #4cbb5c; --accent-ink: #08130b; --accent-soft: #1f3a24; --warn: #e3ac45; --warn-soft: #3a2e14; color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.45 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.app { max-width: 480px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; align-items: center; gap: 8px; padding-block: 14px 10px; }
+.bar h1 { font: 700 26px/1.1 var(--display); letter-spacing: .01em; margin: 0; flex: 1; min-width: 0; text-wrap: balance; }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; height: 40px; min-width: 40px; padding: 0 12px; font-weight: 600; }
+main { flex: 1; display: flex; flex-direction: column; gap: 14px; padding-bottom: 20px; }
+
+.label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.tabs { display: flex; gap: 6px; }
+.tab { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; font-weight: 600; color: var(--muted); }
+.tab[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.job { display: grid; gap: 6px; text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.job-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.job-name { font: 700 20px/1.15 var(--display); }
+.job-desc { color: var(--muted); font-size: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+.chip.scheduled { background: var(--line); color: var(--ink); }
+.chip.progress { background: var(--warn-soft); color: var(--warn); }
+.chip.sent { background: var(--accent-soft); color: var(--accent); }
+.empty { color: var(--muted); text-align: center; padding: 40px 0; }
+
+.section { display: grid; gap: 8px; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.facts > div { min-width: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.facts .wide { grid-column: 1 / -1; }
+textarea, input[type=text], input[type=email], input[type=date], input[type=tel] {
+  width: 100%; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+textarea { min-height: 96px; resize: vertical; }
+.field { display: grid; gap: 4px; }
+
+.photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.photo { position: relative; aspect-ratio: 3/4; border-radius: 8px; overflow: hidden; background: var(--line); max-width: 100%; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo button { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 16px; line-height: 1; }
+.add { display: grid; place-items: center; aspect-ratio: 3/4; border: 2px dashed var(--line); border-radius: 8px; color: var(--muted); font-weight: 600; text-align: center; font-size: 14px; cursor: pointer; }
+.add:hover { border-color: var(--accent); color: var(--accent); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.actions { position: sticky; bottom: 0; background: var(--bg); padding-block: 10px calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; margin-top: auto; }
+.primary { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 12px; padding: 14px; font-weight: 700; font-size: 17px; }
+.secondary { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-weight: 600; }
+.note { font-size: 13px; color: var(--muted); text-align: center; }
+.banner { background: var(--warn-soft); color: var(--warn); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.attach { display: flex; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.attach b { display: block; }
+.pdf { font: 700 12px var(--mono); background: #c8352b; color: #fff; border-radius: 4px; padding: 6px 5px; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; z-index: 20; max-width: calc(100% - 32px); }
+
+/* The report: always paper, mirrors the company's PDF layout */
+.paper-wrap { overflow-x: auto; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.12); }
+.paper { background: var(--paper); color: var(--paper-ink); padding: 18px; display: grid; gap: 8px; font-size: 12px; line-height: 1.4; }
+.r-row { display: grid; grid-template-columns: 1fr 1fr; border: 2px double var(--paper-line); }
+.r-row > div { padding: 8px; text-align: center; white-space: pre-line; min-width: 0; overflow-wrap: anywhere; }
+.r-row > div + div { border-left: 1px solid var(--paper-line); }
+.r-row.one { grid-template-columns: 1fr; }
+.r-row.head { background: var(--paper-bar); border: 2px solid #1d1d1d; font-weight: 700; }
+.r-row.head > div + div { border-left-color: #1d1d1d; }
+.r-logo { display: grid; place-items: center; min-height: 60px; font: 700 20px/1.1 var(--display); letter-spacing: .08em; }
+.r-logo img { max-height: 70px; }
+.r-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.r-photos img, .r-map { width: 100%; display: block; }
+.r-map { max-width: 50%; }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: rise .2s ease-out; } @keyframes rise { from { opacity: .4; transform: translate(-50%, 8px); } } }
+</style>
+
+<div class="app">
+  <header class="bar" id="bar"></header>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const KEY = 'field-report-v1';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const usDate = iso => { const [y, m, d] = iso.split('-'); return `${m}/${d}/${y}`; };
+const stampTime = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + d.toTimeString().slice(0, 8);
+const lines = s => String(s || '').split('\n').map(l => l.trim()).filter(Boolean);
+
+let data, ui = { view: 'jobs', tab: 'open', id: null };
+
+// ---------- example data (drawn on canvas so the prototype opens in a working state) ----------
+function stamp(ctx, w, h, text) {
+  const size = Math.round(w / 26);
+  ctx.font = `600 ${size}px Barlow, Arial, sans-serif`;
+  ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = size / 4;
+  text.slice().reverse().forEach((t, i) => ctx.fillText(t, w - size * .6, h - size * .7 - i * size * 1.15));
+  ctx.shadowBlur = 0;
+}
+function examplePhoto(hue, when, place) {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 800; const x = c.getContext('2d');
+  const sky = x.createLinearGradient(0, 0, 0, 380); sky.addColorStop(0, '#0b1020'); sky.addColorStop(1, '#2a3040');
+  x.fillStyle = sky; x.fillRect(0, 0, 600, 380);
+  const g = x.createLinearGradient(0, 330, 0, 800); g.addColorStop(0, `hsl(${hue} 8% 42%)`); g.addColorStop(1, `hsl(${hue} 10% 30%)`);
+  x.fillStyle = g; x.beginPath(); x.moveTo(250, 330); x.lineTo(350, 330); x.lineTo(600, 800); x.lineTo(0, 800); x.fill();
+  x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 2;
+  for (let i = 0; i < 9; i++) { const y = 340 + Math.pow(i / 8, 1.8) * 460; const k = (y - 330) / 470; x.beginPath(); x.moveTo(300 - 50 - k * 250, y); x.lineTo(300 + 50 + k * 250, y); x.stroke(); }
+  x.fillStyle = 'rgba(255,255,255,.18)'; x.beginPath(); x.ellipse(310, 560, 40, 200, .05, 0, 7); x.fill();
+  x.fillStyle = '#f4f2e8'; x.fillRect(0, 0, 160, 520); x.fillStyle = '#7a3b2c'; x.fillRect(0, 440, 160, 80);
+  for (let i = 0; i < 5; i++) { x.fillStyle = '#fffbe0'; x.beginPath(); x.arc(380 + i * 45, 120 + i * 18, 6, 0, 7); x.fill(); }
+  stamp(x, 600, 800, [stampTime(when), ...place]);
+  return c.toDataURL('image/jpeg', .75);
+}
+function exampleMap() {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 400; const x = c.getContext('2d');
+  x.fillStyle = '#4a5160'; x.fillRect(0, 0, 600, 400);
+  x.strokeStyle = 'rgba(255,255,255,.25)'; x.lineWidth = 1;
+  for (let i = 20; i < 600; i += 14) { x.beginPath(); x.moveTo(i, 260); x.lineTo(i, 400); x.stroke(); }
+  x.fillStyle = '#d9dbe0'; x.fillRect(150, 40, 230, 170); x.fillStyle = '#c2c5cc'; x.fillRect(420, 70, 70, 60); x.fillRect(420, 260, 90, 50);
+  x.fillStyle = '#9aa0aa'; x.fillRect(560, 0, 30, 400); x.fillRect(0, 10, 600, 14);
+  x.strokeStyle = '#64e04c'; x.lineWidth = 5; x.beginPath(); x.moveTo(60, 160); x.lineTo(120, 220); x.lineTo(380, 220); x.lineTo(380, 40); x.stroke();
+  x.fillStyle = '#e53935'; x.beginPath(); x.arc(265, 120, 9, 0, 7); x.fill();
+  return c.toDataURL('image/jpeg', .8);
+}
+function exampleData() {
+  const d = new Date(); d.setHours(22, 14, 8);
+  const site = 'Example: Sunridge Plaza\n4120 E Camelback Rd\nPhoenix, AZ 85018';
+  const place = ['4120 E Camelback Rd', 'Phoenix, Arizona'];
+  return {
+    company: { name: 'Your Company', address: '123 Example St.\nPhoenix, AZ 85034', phone: '(480) 555-0100', email: 'office@example.com', logo: null },
+    jobs: [
+      { id: 'j1', no: '1098443250', date: today(), location: site, billing: 'Example Property Mgmt\nPO Box 1200\nScottsdale, AZ 85252',
+        email: 'manager@example.com', description: 'Pressure wash walks in green only. Complete after 10PM.',
+        notes: 'Walks pressure washed along storefronts and south side. Gum removed at main entry.', map: exampleMap(),
+        photos: [examplePhoto(30, d, place), examplePhoto(200, new Date(d - 52000), place), examplePhoto(10, new Date(d - 140000), place)], sentAt: null },
+      { id: 'j2', no: '1098443262', date: today(), location: 'Example: Desert Willow Office Park\n2215 N 7th St\nPhoenix, AZ 85006', billing: 'Example Holdings LLC\n500 W Main St\nMesa, AZ 85201',
+        email: 'facilities@example.com', description: 'Clean dumpster enclosures (3). Degrease pads and rinse.', notes: '', map: null, photos: [], sentAt: null },
+      { id: 'j0', no: '1098443199', date: today(), location: 'Example: Canyon View Apartments\n8800 N 19th Ave\nPhoenix, AZ 85021', billing: 'Example Residential\nPO Box 77\nTempe, AZ 85280',
+        email: 'leasing@example.com', description: 'Pressure wash pool deck and stairwells B and C.', notes: 'Done. Stairwell C had oil stain, treated twice.', map: null, photos: [], sentAt: Date.now() - 3 * 3600e3 },
+    ],
+  };
+}
+
+// ---------- storage: per-device only in this prototype ----------
+function load() { try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch {} return exampleData(); }
+function save() {
+  // ponytail: photos as data URLs in localStorage (~5MB cap); the real app keeps files on device and syncs to a server.
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { toast('Storage full on this device. Changes stay until you close the page.'); }
+}
+const job = () => data.jobs.find(j => j.id === ui.id);
+const status = j => j.sentAt ? 'sent' : (j.photos.length || j.notes) ? 'progress' : 'scheduled';
+const statusLabel = { scheduled: 'Scheduled', progress: 'In progress', sent: 'Report sent' };
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 3200); }
+function go(view, id) { ui.view = view; if (id !== undefined) ui.id = id; render(); window.scrollTo(0, 0); }
+
+// ---------- photos: resize and stamp date, time and address, like the field camera app ----------
+function readImage(file) {
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); });
+}
+async function processPhoto(file, stampLines) {
+  const img = await readImage(file);
+  const k = Math.min(1, 1400 / Math.max(img.width, img.height));
+  const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(img.src);
+  if (stampLines) stamp(x, c.width, c.height, stampLines);
+  return c.toDataURL('image/jpeg', .78);
+}
+
+// ---------- views ----------
+const views = {
+  jobs() {
+    const list = data.jobs.filter(j => (ui.tab === 'sent') === !!j.sentAt);
+    return {
+      bar: `<h1>Jobs</h1><button class="icon-btn" data-act="settings" aria-label="Company settings">Company</button>`,
+      main: `
+        <div class="tabs" role="group" aria-label="Filter jobs">
+          <button class="tab" data-act="tab" data-v="open" aria-pressed="${ui.tab === 'open'}">To do</button>
+          <button class="tab" data-act="tab" data-v="sent" aria-pressed="${ui.tab === 'sent'}">Sent</button>
+        </div>
+        ${list.map(j => `
+          <button class="job" data-act="open" data-id="${j.id}">
+            <span class="job-top"><span class="job-name">${esc(lines(j.location)[0])}</span><span class="chip ${status(j)}">${statusLabel[status(j)]}</span></span>
+            <span class="mono">#${esc(j.no)} · ${usDate(j.date)}</span>
+            <span class="job-desc">${esc(j.description)}</span>
+          </button>`).join('') || `<p class="empty">${ui.tab === 'sent' ? 'No reports sent yet.' : 'No open jobs. Add one below.'}</p>`}
+        <div class="actions"><button class="primary" data-act="new">New job</button></div>`,
+    };
+  },
+
+  job() {
+    const j = job(); const st = status(j);
+    return {
+      bar: `<button class="icon-btn" data-act="back" aria-label="Back to jobs">‹ Jobs</button><h1></h1><span class="chip ${st}">${statusLabel[st]}</span>`,
+      main: `
+        <h2 style="font:700 28px/1.1 var(--display);margin:0;text-wrap:balance">${esc(lines(j.location)[0])}</h2>
+        <div class="facts">
+          <div><div class="label">Job #</div><span class="mono">${esc(j.no)}</span></div>
+          <div><div class="label">Service date</div><span class="mono">${usDate(j.date)}</span></div>
+          <div><div class="label">Service location</div>${esc(lines(j.location).slice(1).join('\n'))}</div>
+          <div><div class="label">Bill to</div>${esc(lines(j.billing).join('\n'))}</div>
+          <div class="wide"><div class="label">Job description</div>${esc(j.description)}</div>
+        </div>
+        <div class="section">
+          <label class="label" for="notes">Completion notes</label>
+          <textarea id="notes" data-act="notes" placeholder="What was done, anything the client should know">${esc(j.notes)}</textarea>
+        </div>
+        <div class="section">
+          <div class="label">Photos (${j.photos.length})</div>
+          <div class="photos">
+            ${j.photos.map((p, i) => `<div class="photo"><img src="${p}" alt="Job photo ${i + 1}"><button data-act="delphoto" data-i="${i}" aria-label="Remove photo ${i + 1}">×</button></div>`).join('')}
+            <label class="add" for="addphotos">+ Take or add photos</label>
+          </div>
+          <input class="sr" type="file" id="addphotos" accept="image/*" multiple data-act="photos">
+          <p class="note" style="text-align:left;margin:0">Each photo gets the date, time and service address stamped on it.</p>
+        </div>
+        <div class="section">
+          <div class="label">Site map (optional)</div>
+          ${j.map ? `<div class="photo" style="aspect-ratio:3/2"><img src="${j.map}" alt="Site map"><button data-act="delmap" aria-label="Remove site map">×</button></div>`
+                  : `<label class="add" style="aspect-ratio:auto;padding:18px" for="addmap">+ Add site map or aerial screenshot</label>`}
+          <input class="sr" type="file" id="addmap" accept="image/*" data-act="map">
+        </div>
+        <div class="actions">
+          <button class="primary" data-act="preview" ${j.photos.length ? '' : 'disabled style="opacity:.5"'}>Review report</button>
+          ${j.photos.length ? '' : '<p class="note">Add at least one photo to make the report.</p>'}
+        </div>`,
+    };
+  },
+
+  report() {
+    const j = job(); const c = data.company;
+    return {
+      bar: `<button class="icon-btn" data-act="back-job" aria-label="Back to job">‹ Job</button><h1>Report</h1>`,
+      main: `
+        <div class="paper-wrap"><div class="paper">
+          <div class="r-row"><div class="r-logo">${c.logo ? `<img src="${c.logo}" alt="${esc(c.name)} logo">` : esc(c.name).toUpperCase()}</div>
+            <div><b>${esc(c.name)}</b>\n${esc(c.address)}\n${esc(c.phone)}\n${esc(c.email)}</div></div>
+          <div class="r-row head"><div>Service Location</div><div>Billing Address</div></div>
+          <div class="r-row"><div>${esc(lines(j.location).join('\n'))}</div><div>${esc(lines(j.billing).join('\n'))}</div></div>
+          <div class="r-row head"><div>Service Date: ${usDate(j.date)}</div><div>Job# ${esc(j.no)}</div></div>
+          <div class="r-row head one"><div>Job Description</div></div>
+          <div class="r-row one"><div>${esc(j.description)}</div></div>
+          <div class="r-row head one"><div>Completion Notes from Field Tech</div></div>
+          <div class="r-row one"><div>${esc(j.notes) || '&nbsp;'}</div></div>
+          ${j.map ? `<img class="r-map" src="${j.map}" alt="Site map">` : ''}
+          <div class="r-photos">${j.photos.map((p, i) => `<img src="${p}" alt="Job photo ${i + 1}">`).join('')}</div>
+        </div></div>
+        <div class="actions">
+          <button class="primary" data-act="email">Email to client</button>
+          <button class="secondary" data-act="back-job">Edit job</button>
+        </div>`,
+    };
+  },
+
+  email() {
+    const j = job(); const site = lines(j.location)[0];
+    return {
+      bar: `<button class="icon-btn" data-act="preview" aria-label="Back to report">‹ Report</button><h1>Send report</h1>`,
+      main: `
+        <div class="field"><label class="label" for="to">To</label><input type="email" id="to" value="${esc(j.email)}"></div>
+        <div class="field"><label class="label" for="subj">Subject</label><input type="text" id="subj" value="${esc(`Job report #${j.no} · ${site} · ${usDate(j.date)}`)}"></div>
+        <div class="field"><label class="label" for="body">Message</label><textarea id="body" style="min-height:150px">${esc(
+`Hello,
+
+The work at ${site} is complete. The job report with photos is attached.
+
+${j.notes ? 'Notes from the field: ' + j.notes + '\n\n' : ''}Thank you,
+${data.company.name}
+${data.company.phone}`)}</textarea></div>
+        <div class="attach"><span class="pdf">PDF</span><span><b>Job-${esc(j.no)}.pdf</b><span class="note">${j.photos.length + (j.map ? 1 : 0) + 1} pages · ${j.photos.length} photos</span></span></div>
+        ${j.sentAt ? `<div class="banner">Already sent ${new Date(j.sentAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}. Sending again sends a new copy.</div>` : ''}
+        <div class="actions">
+          <button class="primary" data-act="send">Send</button>
+          <p class="note">Prototype: tapping Send marks the job sent but does not send email.</p>
+        </div>`,
+    };
+  },
+
+  newjob() {
+    return {
+      bar: `<button class="icon-btn" data-act="back" aria-label="Cancel">Cancel</button><h1>New job</h1>`,
+      main: `<form id="jobform" class="section" style="gap:12px">
+        <div class="facts" style="padding:0;border:0;background:none">
+          <div class="field"><label class="label" for="f-no">Job #</label><input type="text" id="f-no" required value="${String(Date.now()).slice(-10)}"></div>
+          <div class="field"><label class="label" for="f-date">Service date</label><input type="date" id="f-date" required value="${today()}"></div>
+        </div>
+        <div class="field"><label class="label" for="f-loc">Service location</label><textarea id="f-loc" required placeholder="Site name&#10;Street&#10;City, State ZIP"></textarea></div>
+        <div class="field"><label class="label" for="f-bill">Billing address</label><textarea id="f-bill" required placeholder="Client name&#10;Street or PO Box&#10;City, State ZIP"></textarea></div>
+        <div class="field"><label class="label" for="f-email">Client email</label><input type="email" id="f-email" required placeholder="name@client.com"></div>
+        <div class="field"><label class="label" for="f-desc">Job description</label><textarea id="f-desc" required placeholder="What needs to be done"></textarea></div>
+        <div class="actions"><button class="primary" type="submit">Add job</button></div>
+      </form>`,
+    };
+  },
+
+  settings() {
+    const c = data.company;
+    return {
+      bar: `<button class="icon-btn" data-act="back" aria-label="Back to jobs">‹ Jobs</button><h1>Company</h1>`,
+      main: `<form id="coform" class="section" style="gap:12px">
+        <p class="note" style="text-align:left;margin:0">This goes at the top of every report.</p>
+        <div class="field"><label class="label" for="c-name">Company name</label><input type="text" id="c-name" value="${esc(c.name)}"></div>
+        <div class="field"><label class="label" for="c-addr">Address</label><textarea id="c-addr" style="min-height:70px">${esc(c.address)}</textarea></div>
+        <div class="field"><label class="label" for="c-phone">Phone</label><input type="tel" id="c-phone" value="${esc(c.phone)}"></div>
+        <div class="field"><label class="label" for="c-email">Email</label><input type="email" id="c-email" value="${esc(c.email)}"></div>
+        <div class="section"><div class="label">Logo</div>
+          ${c.logo ? `<div class="photo" style="aspect-ratio:auto;background:#fff;padding:10px;max-width:220px"><img src="${c.logo}" alt="Logo" style="object-fit:contain"><button type="button" data-act="dellogo" aria-label="Remove logo">×</button></div>`
+                   : `<label class="add" style="aspect-ratio:auto;padding:18px" for="c-logo">+ Add logo</label>`}
+          <input class="sr" type="file" id="c-logo" accept="image/*" data-act="logo"></div>
+        <div class="actions"><button class="primary" type="submit">Save</button>
+          <button class="secondary" type="button" data-act="reset">Reset prototype to example data</button></div>
+      </form>`,
+    };
+  },
+};
+
+function render() {
+  const v = views[ui.view]();
+  $('#bar').innerHTML = v.bar; $('#main').innerHTML = v.main;
+  document.title = 'Field Report';
+}
+
+// ---------- events ----------
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const j = job();
+  switch (t.dataset.act) {
+    case 'tab': ui.tab = t.dataset.v; render(); break;
+    case 'open': go('job', t.dataset.id); break;
+    case 'back': go('jobs'); break;
+    case 'back-job': go('job'); break;
+    case 'new': go('newjob'); break;
+    case 'settings': go('settings'); break;
+    case 'preview': if (j.photos.length) go('report'); break;
+    case 'email': go('email'); break;
+    case 'delphoto': j.photos.splice(+t.dataset.i, 1); save(); render(); break;
+    case 'delmap': j.map = null; save(); render(); break;
+    case 'dellogo': data.company.logo = null; save(); render(); break;
+    case 'reset': try { localStorage.removeItem(KEY); } catch {} data = exampleData(); go('jobs'); toast('Example data restored'); break;
+    case 'send': {
+      const to = $('#to').value.trim();
+      if (!/^\S+@\S+\.\S+$/.test(to)) { toast('Enter the client email address.'); $('#to').focus(); break; }
+      j.email = to; j.sentAt = Date.now(); save(); ui.tab = 'sent'; go('jobs'); toast(`Report marked sent to ${to}`); break;
+    }
+  }
+});
+
+document.addEventListener('change', async e => {
+  const t = e.target, j = job();
+  if (t.dataset.act === 'notes') { j.notes = t.value; save(); }
+  if (t.dataset.act === 'photos' && t.files.length) {
+    toast('Adding photos…');
+    const place = lines(j.location).slice(1);
+    for (const f of t.files) {
+      try { j.photos.push(await processPhoto(f, [stampTime(new Date(f.lastModified || Date.now())), ...place])); }
+      catch { toast(`Could not read ${f.name}. Try a JPEG or PNG.`); }
+    }
+    save(); render(); toast(`${j.photos.length} photos on this job`);
+  }
+  if (t.dataset.act === 'map' && t.files[0]) { j.map = await processPhoto(t.files[0]); save(); render(); }
+  if (t.dataset.act === 'logo' && t.files[0]) { data.company.logo = await processPhoto(t.files[0]); save(); render(); }
+});
+
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'jobform') {
+    const v = id => $(id).value.trim();
+    const j = { id: 'j' + Date.now(), no: v('#f-no'), date: v('#f-date'), location: v('#f-loc'), billing: v('#f-bill'),
+      email: v('#f-email'), description: v('#f-desc'), notes: '', map: null, photos: [], sentAt: null };
+    data.jobs.unshift(j); save(); ui.tab = 'open'; go('job', j.id); toast('Job added');
+  }
+  if (e.target.id === 'coform') {
+    Object.assign(data.company, { name: $('#c-name').value.trim() || 'Your Company', address: $('#c-addr').value.trim(),
+      phone: $('#c-phone').value.trim(), email: $('#c-email').value.trim() });
+    save(); go('jobs'); toast('Company details saved');
+  }
+});
+
+data = load();
+render();
+</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</html>
